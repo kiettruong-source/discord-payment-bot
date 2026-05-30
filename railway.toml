@@ -1,0 +1,8 @@
+# railway.toml – Railway deployment config
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "node index.js"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5
