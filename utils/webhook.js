@@ -40,6 +40,9 @@ function createWebhookRouter(client) {
     // Always respond 200 quickly so Casso doesn't retry
     res.status(200).json({ error: 0, message: 'OK' });
 
+    // ⏸️ Feature paused: Returning early to disable payment notifications for now.
+    return;
+
     if (!verifySecret(req)) {
       console.warn('⚠️  Casso webhook: invalid secret token, ignoring.');
       return;
