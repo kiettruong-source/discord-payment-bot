@@ -15,11 +15,18 @@
     "axios": "^1.7.2",
     "discord-api-types": "^0.37.97",
     "discord.js": "^14.15.3",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
   },
-  "keywords": ["discord", "bot", "vietqr", "payment", "vietnam"],
+  "keywords": [
+    "discord",
+    "bot",
+    "vietqr",
+    "payment",
+    "vietnam"
+  ],
   "license": "MIT"
 }

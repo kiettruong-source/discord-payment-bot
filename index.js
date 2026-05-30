@@ -4,6 +4,11 @@ const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
+const { createWebhookRouter } = require('./utils/webhook');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 const client = new Client({
   intents: [
@@ -76,3 +81,10 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
+// Start Express Server for Webhooks
+app.use('/', createWebhookRouter(client));
+
+app.listen(PORT, () => {
+  console.log(`🚀 Webhook server listening on port ${PORT}`);
+});
