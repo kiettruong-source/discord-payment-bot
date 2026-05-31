@@ -53,7 +53,8 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
   const userWord = message.content.trim().toLowerCase();
-  const galleryPath = path.join(__dirname, 'gallery.json');
+  const dataDir = fs.existsSync('/app/data') ? '/app/data' : __dirname;
+  const galleryPath = path.join(dataDir, 'gallery.json');
   let gallery = {};
   if (fs.existsSync(galleryPath)) {
     try {

@@ -19,7 +19,8 @@ module.exports = {
 
     const name = interaction.options.getString('name').trim().toLowerCase();
 
-    const galleryPath = path.join(__dirname, '..', 'gallery.json');
+    const dataDir = fs.existsSync('/app/data') ? '/app/data' : path.join(__dirname, '..');
+    const galleryPath = path.join(dataDir, 'gallery.json');
     let gallery = {};
     if (fs.existsSync(galleryPath)) {
       try {

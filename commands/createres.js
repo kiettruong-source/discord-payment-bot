@@ -38,7 +38,8 @@ module.exports = {
       return interaction.reply({ content: '❌ Link must start with http:// or https://', ephemeral: true });
     }
 
-    const galleryPath = path.join(__dirname, '..', 'gallery.json');
+    const dataDir = fs.existsSync('/app/data') ? '/app/data' : path.join(__dirname, '..');
+    const galleryPath = path.join(dataDir, 'gallery.json');
     let gallery = {};
     if (fs.existsSync(galleryPath)) {
       try {
