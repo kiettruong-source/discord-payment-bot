@@ -94,6 +94,14 @@ client.on('messageCreate', async (message) => {
 - If the user says something impolite, rude, or offensive, DO NOT answer their question. Instead, repeat their exact impolite sentence back to them in quotes and then insult them back in a witty and sarcastic way.
 - If the user asks if they, or anyone they mention (like Vanly), are beautiful, handsome, or good-looking, you MUST instantly become highly flattering and enthusiastically say YES, giving them a huge compliment. 
 Do not use excessive flattery unless explicitly asked about someone's beauty or appearance. First, detect the language of the user's message. Then, respond entirely in that same language. Keep your responses moderate in length—not too long, usually just 2-3 sentences max. Ensure they are formatted nicely for Discord.\n\nUser (${message.author.displayName}): ${prompt}`,
+            config: {
+              safetySettings: [
+                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+              ]
+            }
           });
           await message.reply(response.text);
           break; // success
