@@ -36,6 +36,16 @@ for (const file of commandFiles) {
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
+  // Initialize persistent data volume if it exists
+  if (fs.existsSync('/app/data')) {
+    const persistGalleryPath = '/app/data/gallery.json';
+    const localGalleryPath = path.join(__dirname, 'gallery.json');
+    if (!fs.existsSync(persistGalleryPath) && fs.existsSync(localGalleryPath)) {
+      console.log('Copying local gallery.json to persistent volume...');
+      fs.copyFileSync(localGalleryPath, persistGalleryPath);
+    }
+  }
+
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
   try {
     console.log('🔄 Registering slash commands...');
