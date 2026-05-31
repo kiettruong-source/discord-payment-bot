@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@discordjs/rest": "^2.3.0",
+    "@google/genai": "^2.7.0",
     "axios": "^1.7.2",
     "discord-api-types": "^0.37.97",
     "discord.js": "^14.15.3",

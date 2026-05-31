@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const { createWebhookRouter } = require('./utils/webhook');
+const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,9 +49,30 @@ client.once('ready', async () => {
   }
 });
 
-// Handle regular messages for gallery shortcuts
+// Handle regular messages for gallery shortcuts and AI mentions
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
+
+  // AI Chat handler when the bot is pinged
+  if (message.mentions.has(client.user) && process.env.GEMINI_API_KEY) {
+    const prompt = message.content.replace(`<@${client.user.id}>`, '').replace(`<@!${client.user.id}>`, '').trim();
+    
+    if (prompt.length > 0) {
+      await message.channel.sendTyping();
+      try {
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: `You are Vanu, a helpful and friendly Discord bot assistant. You speak both Vietnamese and English fluently. Keep responses concise and formatted nicely for Discord.\n\nUser: ${prompt}`,
+        });
+        await message.reply(response.text);
+      } catch (err) {
+        console.error('Gemini API Error:', err);
+        await message.reply('❌ Sorry, I encountered an error processing your request. Please check my API configuration.');
+      }
+      return; // Stop here so it doesn't trigger gallery commands
+    }
+  }
 
   const userWord = message.content.trim().toLowerCase();
   const dataDir = fs.existsSync('/app/data') ? '/app/data' : __dirname;
