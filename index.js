@@ -84,7 +84,6 @@ client.on('messageCreate', async (message) => {
 
     const { EmbedBuilder } = require('discord.js');
     const embed = new EmbedBuilder()
-      .setTitle(`🌌 ${userWord.charAt(0).toUpperCase() + userWord.slice(1)} Gallery Asset`)
       .setColor('#9b59b6')
       .setImage(imageUrl)
       .setFooter({ text: `Triggered by ${message.author.displayName}`, iconURL: message.author.displayAvatarURL() });
