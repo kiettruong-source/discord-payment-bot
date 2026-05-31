@@ -101,7 +101,7 @@ client.on('messageCreate', async (message) => {
       while (retryCount < maxRetries) {
         try {
           const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-2.5-flash-lite',
             contents: `You are Vanu, a helpful Discord bot assistant. Under normal circumstances, answer politely and concisely. 
 - If the user says something impolite, rude, or offensive, DO NOT answer their question. Instead, repeat their exact impolite sentence back to them in quotes and then insult them back in a witty and sarcastic way.
 - If the user asks if they, or anyone they mention (like Vanly), are beautiful, handsome, or good-looking, you MUST instantly become highly flattering and enthusiastically say YES, giving them a huge compliment. 
