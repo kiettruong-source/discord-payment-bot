@@ -14,6 +14,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
   ],
 });
 
@@ -44,6 +45,33 @@ client.once('ready', async () => {
     console.log('✅ Slash commands registered globally.');
   } catch (err) {
     console.error('❌ Failed to register commands:', err);
+  }
+});
+
+// Handle regular messages for gallery shortcuts
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+
+  const userWord = message.content.trim().toLowerCase();
+  const galleryPath = path.join(__dirname, 'gallery.json');
+  let gallery = {};
+  if (fs.existsSync(galleryPath)) {
+    try {
+      gallery = JSON.parse(fs.readFileSync(galleryPath, 'utf-8'));
+    } catch (e) {
+      console.error('Failed to parse gallery.json', e);
+    }
+  }
+
+  if (gallery[userWord]) {
+    const { EmbedBuilder } = require('discord.js');
+    const embed = new EmbedBuilder()
+      .setTitle(`🌌 ${userWord.charAt(0).toUpperCase() + userWord.slice(1)} Gallery Asset`)
+      .setColor('#9b59b6')
+      .setImage(gallery[userWord])
+      .setFooter({ text: `Triggered by ${message.author.displayName}`, iconURL: message.author.displayAvatarURL() });
+    
+    await message.channel.send({ embeds: [embed] });
   }
 });
 
