@@ -90,7 +90,7 @@ client.on('messageCreate', async (message) => {
         try {
           const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: `You are Vanu, a helpful and friendly Discord bot assistant. You speak both Vietnamese and English fluently. Keep responses concise and formatted nicely for Discord.\n\nUser: ${prompt}`,
+            contents: `You are Vanu, a helpful and friendly Discord bot assistant. First, detect the language of the user's message. Then, respond entirely in that same language. Keep your responses concise and formatted nicely for Discord.\n\nUser: ${prompt}`,
           });
           await message.reply(response.text);
           break; // success
