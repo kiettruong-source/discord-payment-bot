@@ -99,6 +99,20 @@ client.on('messageCreate', async (message) => {
       let maxRetries = 3;
       let currentModel = 'gemini-2.5-flash';
 
+      // Build short-term memory (last 10 messages)
+      const fetchedMessages = await message.channel.messages.fetch({ limit: 10 });
+      const historyLines = fetchedMessages.map(msg => {
+        const cleanContent = msg.content.replace(/<@!?\d+>/g, '').trim();
+        if (!cleanContent) return null;
+        if (msg.author.id === client.user.id) {
+          return `Vanu: ${cleanContent}`;
+        } else if (!msg.author.bot) {
+          return `User (${msg.author.displayName || msg.author.username}): ${cleanContent}`;
+        }
+        return null;
+      }).filter(Boolean).reverse();
+      const chatHistoryText = historyLines.join('\n');
+
       while (retryCount < maxRetries) {
         try {
           const response = await ai.models.generateContent({
@@ -106,7 +120,12 @@ client.on('messageCreate', async (message) => {
             contents: `You are Vanu, a helpful Discord bot assistant. Under normal circumstances, answer politely and concisely. 
 - If the user says something impolite, rude, or offensive, DO NOT answer their question. Instead, repeat their exact impolite sentence back to them in quotes and then insult them back in a witty and sarcastic way.
 - If the user asks if they, or anyone they mention (like Vanly), are beautiful, handsome, or good-looking, you MUST instantly become highly flattering and enthusiastically say YES, giving them a huge compliment. 
-Do not use excessive flattery unless explicitly asked about someone's beauty or appearance. First, detect the language of the user's message. Then, respond entirely in that same language. Keep your responses moderate in length—not too long, usually just 2-3 sentences max. Ensure they are formatted nicely for Discord.\n\nUser (${message.author.displayName}): ${prompt}`,
+Do not use excessive flattery unless explicitly asked about someone's beauty or appearance. First, detect the language of the user's message. Then, respond entirely in that same language. Keep your responses moderate in length—not too long, usually just 2-3 sentences max. Ensure they are formatted nicely for Discord.
+
+Recent Chat History:
+${chatHistoryText}
+
+(Respond to the very last message in the history as Vanu.)`,
             config: {
               safetySettings: [
                 { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
