@@ -58,6 +58,29 @@ client.on('messageCreate', async (message) => {
     const prompt = message.content.replace(`<@${client.user.id}>`, '').replace(`<@!${client.user.id}>`, '').trim();
     
     if (prompt.length > 0) {
+      // 1. Manage Chat Limits
+      const dataDir = fs.existsSync('/app/data') ? '/app/data' : __dirname;
+      const limitsPath = path.join(dataDir, 'chat_limits.json');
+      let limits = {};
+      if (fs.existsSync(limitsPath)) {
+        try { limits = JSON.parse(fs.readFileSync(limitsPath, 'utf-8')); } catch(e) {}
+      }
+      
+      const now = Date.now();
+      const userId = message.author.id;
+      // Reset limit every 12 hours. Max 10 messages per cycle.
+      if (!limits[userId] || now > limits[userId].resetAt) {
+        limits[userId] = { count: 0, resetAt: now + 12 * 60 * 60 * 1000 };
+      }
+      
+      if (limits[userId].count >= 10) {
+        return message.reply("I'm so tired, I'm going to sleep now 😴 / Mình mệt quá, mình đi ngủ đây 😴");
+      }
+      
+      limits[userId].count += 1;
+      fs.writeFileSync(limitsPath, JSON.stringify(limits, null, 2));
+
+      // 2. Process AI Request
       await message.channel.sendTyping();
       try {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
