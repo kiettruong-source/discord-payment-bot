@@ -20,7 +20,6 @@ module.exports = {
         .setDescription('Number of hours (e.g. 1.5 for 1h30m)')
         .setRequired(true)
         .setMinValue(0.5)
-        .setMaxValue(24)
     )
     .addUserOption(opt =>
       opt.setName('customer')
@@ -69,14 +68,10 @@ module.exports = {
         .setImage(`attachment://${paymentId}.png`)
         .addFields(
           { name: '⏰ Type',          value: typeLabel,                                inline: true  },
-          { name: '⌛ Hours',          value: `${hours} hr`,                            inline: true  },
           { name: '📊 Rate',           value: `${rateLabel}/hr`,                        inline: true  },
           { name: '💰 Total Amount',   value: `**${formatVND(amount)}**`,               inline: true  },
-          { name: '🆔 Payment ID',     value: `\`${paymentId}\``,                       inline: true  },
           { name: '🏦 Bank',           value: process.env.BANK_NAME || 'N/A',           inline: true  },
           { name: '👤 Account Name',   value: process.env.BANK_ACCOUNT_NAME || 'N/A',   inline: true  },
-          { name: '🔢 Account No.',    value: process.env.BANK_ACCOUNT_NO || 'N/A',     inline: true  },
-          { name: '📝 Transfer Note',  value: `\`${description}\``,                     inline: false },
         )
         .setFooter({ text: 'Scan QR with any Vietnamese banking app • MoMo • ZaloPay' })
         .setTimestamp();

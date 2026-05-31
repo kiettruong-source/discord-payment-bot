@@ -55,10 +55,7 @@ module.exports = {
         .addFields(
           { name: '🏦 Bank',           value: process.env.BANK_NAME || 'N/A',         inline: true },
           { name: '👤 Account Name',   value: process.env.BANK_ACCOUNT_NAME || 'N/A', inline: true },
-          { name: '🔢 Account No.',    value: process.env.BANK_ACCOUNT_NO || 'N/A',   inline: true },
           { name: '💰 Amount',         value: `**${formatVND(amount)}**`,              inline: true },
-          { name: '🆔 Payment ID',     value: `\`${paymentId}\``,                     inline: true },
-          { name: '📝 Transfer Note',  value: `\`${description}\``,                   inline: false },
         )
         .setFooter({ text: 'Scan QR with any Vietnamese banking app • MoMo • ZaloPay' })
         .setTimestamp();
