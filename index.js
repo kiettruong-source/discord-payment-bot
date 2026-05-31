@@ -43,6 +43,8 @@ client.once('ready', async () => {
     if (!fs.existsSync(persistGalleryPath) && fs.existsSync(localGalleryPath)) {
       console.log('Copying local gallery.json to persistent volume...');
       fs.copyFileSync(localGalleryPath, persistGalleryPath);
+    } else {
+      console.log('Persistent volume detected and ready!');
     }
   }
 
