@@ -82,16 +82,34 @@ client.on('messageCreate', async (message) => {
 
       // 2. Process AI Request
       await message.channel.sendTyping();
-      try {
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: `You are Vanu, a helpful and friendly Discord bot assistant. You speak both Vietnamese and English fluently. Keep responses concise and formatted nicely for Discord.\n\nUser: ${prompt}`,
-        });
-        await message.reply(response.text);
-      } catch (err) {
-        console.error('Gemini API Error:', err);
-        await message.reply('❌ Sorry, I encountered an error processing your request. Please check my API configuration.');
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      let retryCount = 0;
+      let maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `You are Vanu, a helpful and friendly Discord bot assistant. You speak both Vietnamese and English fluently. Keep responses concise and formatted nicely for Discord.\n\nUser: ${prompt}`,
+          });
+          await message.reply(response.text);
+          break; // success
+        } catch (err) {
+          if (err.status === 429 || (err.message && err.message.includes('429'))) {
+            retryCount++;
+            if (retryCount >= maxRetries) {
+              console.error('Gemini API Rate Limit exceeded after retries:', err);
+              await message.reply('❌ The AI is currently receiving too many requests. Please try again in a few seconds.');
+              break;
+            }
+            const waitTime = Math.pow(2, retryCount) * 1000; // wait 2s, 4s, 8s
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          } else {
+            console.error('Gemini API Error:', err);
+            await message.reply('❌ Sorry, I encountered an error processing your request. Please check my API configuration.');
+            break;
+          }
+        }
       }
       return; // Stop here so it doesn't trigger gallery commands
     }
