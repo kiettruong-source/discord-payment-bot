@@ -82,21 +82,17 @@ client.on('messageCreate', async (message) => {
       imageUrl = itemData;
     }
 
-    const { EmbedBuilder } = require('discord.js');
-    const embed = new EmbedBuilder()
-      .setImage(imageUrl);
-
     let contentText = null;
     if (customText) {
       contentText = targetUserId ? `<@${targetUserId}> ${customText}` : customText;
     } else if (targetUserId) {
       contentText = `Hey <@${targetUserId}>, here you go!`;
     }
+    
+    // Append the image URL so Discord unfurls it as a large native image
+    contentText = contentText ? `${contentText}\n${imageUrl}` : imageUrl;
 
-    const messageOptions = { embeds: [embed] };
-    if (contentText) messageOptions.content = contentText;
-
-    await message.channel.send(messageOptions);
+    await message.channel.send({ content: contentText });
   }
 });
 
