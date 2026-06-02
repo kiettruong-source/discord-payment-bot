@@ -206,7 +206,7 @@ ${chatHistoryText}
 
     const messageOptions = {};
     if (contentText) messageOptions.content = contentText;
-    if (imageUrl) {
+    if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
       const embed = new EmbedBuilder().setImage(imageUrl);
       messageOptions.embeds = [embed];
     }
