@@ -10,6 +10,7 @@ const { createWebhookRouter } = require('./utils/webhook');
 const { buildProfileEmbed, buildProfileComponents } = require('./utils/profileCard');
 const { claimDaily, getBalance } = require('./utils/economy');
 const { playTaixiuText } = require('./utils/taixiuGame');
+const { getSoundAttachment } = require('./utils/sound');
 const { GoogleGenAI } = require('@google/genai');
 
 // Download an animated GIF avatar so it can be attached to the message — Discord
@@ -260,10 +261,16 @@ ${chatHistoryText}
       const embed = buildProfileEmbed(itemData, 0, attachment ? { thumbnailOverride: 'attachment://avatar.gif' } : {});
       const components = buildProfileComponents(userWord, itemData, 0);
 
+      // Optional sound bar: attach the profile's stored audio (if any) below the card
+      const soundAttachment = getSoundAttachment(itemData);
+      const files = [];
+      if (attachment) files.push(attachment);
+      if (soundAttachment) files.push(soundAttachment);
+
       const sentMessage = await message.channel.send({
         embeds: [embed],
         components,
-        files: attachment ? [attachment] : []
+        files
       });
 
       // Reuse the uploaded CDN URL (ends in .gif, Discord-hosted) on navigation

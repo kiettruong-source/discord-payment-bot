@@ -12,12 +12,14 @@
   },
   "dependencies": {
     "@discordjs/rest": "^2.3.0",
+    "@distube/ytdl-core": "^4.16.12",
     "@google/genai": "^2.7.0",
     "axios": "^1.7.2",
     "discord-api-types": "^0.37.97",
     "discord.js": "^14.15.3",
     "dotenv": "^16.4.5",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "ffmpeg-static": "^5.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
