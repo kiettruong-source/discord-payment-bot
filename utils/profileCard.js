@@ -2,13 +2,22 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 
 const DEFAULT_COLOR = '#f9a8d4'; // soft pink to match the booking card style
 
+// Discord thumbnails keep the source aspect ratio, so a rectangular icon shows
+// as a rectangle. Route it through the weserv image proxy with a center-crop to
+// force a square (cover) display regardless of the original dimensions.
+function squareIconUrl(icon) {
+  if (!icon || !/^https?:\/\//.test(icon)) return icon;
+  const stripped = icon.replace(/^https?:\/\//, '');
+  return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}&w=256&h=256&fit=cover&a=center`;
+}
+
 function buildProfileEmbed(profileData, currentImageIndex = 0) {
   const embed = new EmbedBuilder()
     .setColor(profileData.color || DEFAULT_COLOR);
 
-  // Avatar shows as a square in the top-right corner
+  // Avatar shows as a square in the top-right corner (center-cropped to square)
   if (profileData.icon) {
-    embed.setThumbnail(profileData.icon);
+    embed.setThumbnail(squareIconUrl(profileData.icon));
   }
 
   // Use markdown headers so the name/bio render LARGE (like the target card).
