@@ -125,10 +125,26 @@ function deleteSoundFiles(shortcut) {
   removeExistingSound(shortcut);
 }
 
+// Rename a profile's sound file from one shortcut to another. Returns the new
+// filename (e.g. "new.mp3") or null if there was no sound file.
+function renameSoundFiles(oldShortcut, newShortcut) {
+  if (!fs.existsSync(soundsDir)) return null;
+  for (const f of fs.readdirSync(soundsDir)) {
+    if (f.startsWith(`${oldShortcut}.`)) {
+      const ext = f.split('.').pop();
+      const newName = `${newShortcut}.${ext}`;
+      fs.renameSync(path.join(soundsDir, f), path.join(soundsDir, newName));
+      return newName;
+    }
+  }
+  return null;
+}
+
 module.exports = {
   saveUploadedSound,
   fetchYouTubeClip,
   getSoundAttachment,
   deleteSoundFiles,
+  renameSoundFiles,
   CLIP_SECONDS,
 };
