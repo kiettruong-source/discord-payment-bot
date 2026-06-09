@@ -112,8 +112,13 @@ function getSoundAttachment(profile) {
   const full = path.join(soundsDir, file);
   if (!fs.existsSync(full)) return null;
   const ext = file.split('.').pop();
-  // Minimal music-note filename (Discord still shows its own audio file icon).
-  return new AttachmentBuilder(full, { name: `♪.${ext}` });
+  // Filename based on the profile name: <name>_sound.<ext>
+  const base = String(profile.role || profile.name || 'profile')
+    .replace(/<a?:\w+:\d+>/g, '')       // strip custom emoji markup <:name:id> / <a:name:id>
+    .replace(/[^\p{L}\p{N}]+/gu, '_')   // non-alphanumeric (incl. unicode emoji) → _
+    .replace(/^_+|_+$/g, '')            // trim leading/trailing underscores
+    || 'profile';
+  return new AttachmentBuilder(full, { name: `${base}_sound.${ext}` });
 }
 
 function deleteSoundFiles(shortcut) {
