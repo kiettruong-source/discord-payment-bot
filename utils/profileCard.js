@@ -15,13 +15,11 @@ function squareIconUrl(icon) {
   return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}&w=256&h=256&fit=cover&a=center${anim}`;
 }
 
-// Parse an interests string into lines. Prefer newline or pipe `|` separators so
-// an interest can contain commas (e.g. "Game: PUBG, Liên Quân"); fall back to
-// comma-splitting when neither is present.
+// Parse a bio string into lines, split on period `.`, pipe `|`, or newline.
+// Commas are NOT separators, so a line can contain commas (e.g. "Game: PUBG, LQ").
 function parseInterests(str) {
   if (!str) return [];
-  const parts = /[\n|]/.test(str) ? str.split(/[\n|]/) : str.split(',');
-  return parts.map(s => s.trim()).filter(Boolean);
+  return str.split(/[.\n|]/).map(s => s.trim()).filter(Boolean);
 }
 
 // Schema: { role: <icon-line identity>, name: <big header> }.

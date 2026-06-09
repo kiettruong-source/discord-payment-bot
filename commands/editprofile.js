@@ -30,7 +30,7 @@ module.exports = {
         .setRequired(false))
     .addStringOption(option =>
       option.setName('bio')
-        .setDescription('New bio lines separated by | or comma — replaces all bio lines')
+        .setDescription('New bio lines separated by . (period) — replaces all bio lines')
         .setRequired(false))
     .addNumberOption(option =>
       option.setName('rating')

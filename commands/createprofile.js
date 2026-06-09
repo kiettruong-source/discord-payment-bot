@@ -30,7 +30,7 @@ module.exports = {
         .setRequired(true))
     .addStringOption(option =>
       option.setName('bio')
-        .setDescription('Bio lines separated by | or comma (e.g. "Gaming | Game: PUBG, LQ | Cam: Deal")')
+        .setDescription('Bio lines separated by . (period) — e.g. "Cần Thơ. Game: PUBG, LQ. Cam: Deal"')
         .setRequired(false))
     .addNumberOption(option =>
       option.setName('rating')
