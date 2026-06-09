@@ -6,28 +6,30 @@ function buildProfileEmbed(profileData, currentImageIndex = 0) {
   const embed = new EmbedBuilder()
     .setColor(profileData.color || DEFAULT_COLOR);
 
-  // Prominent name as the title (largest text)
-  if (profileData.name) {
-    embed.setTitle(`🌙  ${profileData.name}`);
-  }
-
   // Avatar shows as a square in the top-right corner
   if (profileData.icon) {
     embed.setThumbnail(profileData.icon);
   }
 
-  // Description: bio line, then star-bulleted interests
+  // Use markdown headers so the name/bio render LARGE (like the target card).
+  // # = H1 (biggest), ## = H2 (big). Everything lives in the description.
   const descLines = [];
+  if (profileData.name) {
+    descLines.push(`# 🌙 ${profileData.name}`);
+  }
   if (profileData.bio) {
-    descLines.push(`✨  **${profileData.bio}**  ✨`);
+    descLines.push(`## ✨ ${profileData.bio} ✨`);
   }
   if (profileData.interests && profileData.interests.length > 0) {
-    if (descLines.length > 0) descLines.push('');
+    descLines.push(''); // spacer
     profileData.interests.forEach(i => descLines.push(`✿  ${i}`));
   }
   if (profileData.custom_fields && profileData.custom_fields.length > 0) {
     profileData.custom_fields.forEach(f => descLines.push(`✿  **${f.name}:** ${f.value}`));
   }
+  // Divider between the text section and the image
+  descLines.push('');
+  descLines.push('━━━━━━━━━━━━━━━');
   if (descLines.length > 0) {
     embed.setDescription(descLines.join('\n'));
   }
