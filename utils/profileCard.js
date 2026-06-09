@@ -52,11 +52,11 @@ function buildProfileEmbed(profileRaw, currentImageIndex = 0) {
   }
   if (profileData.interests && profileData.interests.length > 0) {
     descLines.push(''); // spacer
-    // Normal (non-bold) body text, one bio line per row with bullet icon
-    profileData.interests.forEach(i => descLines.push(`✿ ${i}`));
+    // Normal (non-bold) body text, one bio line per row, no bullet icon
+    profileData.interests.forEach(i => descLines.push(`${i}`));
   }
   if (profileData.custom_fields && profileData.custom_fields.length > 0) {
-    profileData.custom_fields.forEach(f => descLines.push(`✿ ${f.name}: ${f.value}`));
+    profileData.custom_fields.forEach(f => descLines.push(`${f.name}: ${f.value}`));
   }
   // Divider between the text section and the image
   descLines.push('');
