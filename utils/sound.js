@@ -112,7 +112,7 @@ function getSoundAttachment(profile) {
   const full = path.join(soundsDir, file);
   if (!fs.existsSync(full)) return null;
   const ext = file.split('.').pop();
-  // Filename based on the profile name: <name>_sound.<ext>
+  // Filename based on the profile role: <role>_sound.<ext>
   const base = String(profile.role || profile.name || 'profile')
     .replace(/<a?:\w+:\d+>/g, '')       // strip custom emoji markup <:name:id> / <a:name:id>
     .replace(/[^\p{L}\p{N}]+/gu, '_')   // non-alphanumeric (incl. unicode emoji) → _
