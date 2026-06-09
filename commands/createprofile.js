@@ -24,6 +24,10 @@ module.exports = {
         .setDescription('Bio/title text')
         .setRequired(true))
     .addStringOption(option =>
+      option.setName('images')
+        .setDescription('Image URLs (comma-separated)')
+        .setRequired(true))
+    .addStringOption(option =>
       option.setName('interests')
         .setDescription('Interests (comma-separated, e.g., "Gaming,Cooking,Music")')
         .setRequired(false))
@@ -31,10 +35,6 @@ module.exports = {
       option.setName('rating')
         .setDescription('Rating (0-5.0)')
         .setRequired(false))
-    .addStringOption(option =>
-      option.setName('images')
-        .setDescription('Image URLs (comma-separated)')
-        .setRequired(true))
     .addIntegerOption(option =>
       option.setName('likes')
         .setDescription('Number of likes')
