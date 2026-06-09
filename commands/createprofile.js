@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { buildProfileEmbed, buildNavigationButtons } = require('../utils/profileCard');
+const { buildProfileEmbed, buildProfileComponents } = require('../utils/profileCard');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -46,6 +46,10 @@ module.exports = {
     .addIntegerOption(option =>
       option.setName('feedback')
         .setDescription('Number of feedback')
+        .setRequired(false))
+    .addStringOption(option =>
+      option.setName('color')
+        .setDescription('Accent color hex (e.g., #f9a8d4). Default: pink')
         .setRequired(false)),
 
   async execute(interaction) {
@@ -63,11 +67,16 @@ module.exports = {
     const likes = interaction.options.getInteger('likes') || 0;
     const book = interaction.options.getInteger('book') || 0;
     const feedback = interaction.options.getInteger('feedback') || 0;
+    const color = interaction.options.getString('color');
 
     // Validate URLs
     const validateUrl = (url) => url.startsWith('http://') || url.startsWith('https://');
     if (!validateUrl(iconUrl)) {
       return interaction.reply({ content: '❌ Icon URL must start with http:// or https://', ephemeral: true });
+    }
+
+    if (color && !/^#?[0-9a-fA-F]{6}$/.test(color)) {
+      return interaction.reply({ content: '❌ Color must be a 6-digit hex like #f9a8d4', ephemeral: true });
     }
 
     const images = imagesStr.split(',').map(u => u.trim());
@@ -97,11 +106,13 @@ module.exports = {
       bio,
       interests,
       rating: rating || null,
+      color: color ? (color.startsWith('#') ? color : `#${color}`) : null,
       stats: {
         book,
         feedback,
         likes
       },
+      liked_by: [],
       custom_fields: [],
       target_user_id: null,
       custom_text: null
@@ -111,7 +122,7 @@ module.exports = {
 
     // Show preview
     const previewEmbed = buildProfileEmbed(gallery[shortcut], 0);
-    const previewButtons = buildNavigationButtons(shortcut, images.length, 0);
+    const previewComponents = buildProfileComponents(shortcut, gallery[shortcut], 0);
 
     const confirmEmbed = new EmbedBuilder()
       .setTitle('✅ Profile Created')
@@ -120,7 +131,7 @@ module.exports = {
 
     await interaction.reply({
       embeds: [confirmEmbed, previewEmbed],
-      components: images.length > 1 ? [previewButtons] : []
+      components: previewComponents
     });
   }
 };

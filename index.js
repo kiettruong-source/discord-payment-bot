@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const { createWebhookRouter } = require('./utils/webhook');
-const { buildProfileEmbed, buildNavigationButtons } = require('./utils/profileCard');
+const { buildProfileEmbed, buildProfileComponents } = require('./utils/profileCard');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
@@ -206,7 +206,7 @@ ${chatHistoryText}
     if (typeof itemData === 'object' && itemData.images && Array.isArray(itemData.images)) {
       // Profile carousel
       const embed = buildProfileEmbed(itemData, 0);
-      const components = itemData.images.length > 1 ? [buildNavigationButtons(userWord, itemData.images.length, 0)] : [];
+      const components = buildProfileComponents(userWord, itemData, 0);
 
       const sentMessage = await message.channel.send({
         embeds: [embed],
@@ -263,10 +263,11 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.isButton()) {
     const customId = interaction.customId;
     if (customId.startsWith('profile_')) {
+      // Format: profile_{action}_{page}_{shortcut}  (shortcut last so it may contain underscores)
       const parts = customId.split('_');
-      const action = parts[1]; // 'prev' or 'next'
-      const shortcut = parts[2];
-      const currentPage = parseInt(parts[3]);
+      const action = parts[1];
+      const currentPage = parseInt(parts[2]);
+      const shortcut = parts.slice(3).join('_');
 
       const dataDir = fs.existsSync('/app/data') ? '/app/data' : __dirname;
       const galleryPath = path.join(dataDir, 'gallery.json');
@@ -282,15 +283,47 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: '❌ Profile not found or invalid.', ephemeral: true });
       }
 
-      const newPage = action === 'next' ? currentPage + 1 : currentPage - 1;
-      if (newPage < 0 || newPage >= profileData.images.length) {
-        return interaction.reply({ content: '❌ Already at the end!', ephemeral: true });
+      // Navigation: flip between images
+      if (action === 'prev' || action === 'next') {
+        const newPage = action === 'next' ? currentPage + 1 : currentPage - 1;
+        if (newPage < 0 || newPage >= profileData.images.length) {
+          return interaction.reply({ content: '❌ Already at the end!', ephemeral: true });
+        }
+        const embed = buildProfileEmbed(profileData, newPage);
+        const components = buildProfileComponents(shortcut, profileData, newPage);
+        return interaction.update({ embeds: [embed], components });
       }
 
-      const embed = buildProfileEmbed(profileData, newPage);
-      const buttons = buildNavigationButtons(shortcut, profileData.images.length, newPage);
+      // Like: one like per user, persisted
+      if (action === 'like') {
+        if (!profileData.stats) profileData.stats = { book: 0, feedback: 0, likes: 0 };
+        if (!Array.isArray(profileData.liked_by)) profileData.liked_by = [];
+        if (profileData.liked_by.includes(interaction.user.id)) {
+          return interaction.reply({ content: '💗 You already liked this profile!', ephemeral: true });
+        }
+        profileData.liked_by.push(interaction.user.id);
+        profileData.stats.likes = (profileData.stats.likes || 0) + 1;
+        fs.writeFileSync(galleryPath, JSON.stringify(gallery, null, 2), 'utf-8');
 
-      await interaction.update({ embeds: [embed], components: [buttons] });
+        const embed = buildProfileEmbed(profileData, currentPage);
+        const components = buildProfileComponents(shortcut, profileData, currentPage);
+        return interaction.update({ embeds: [embed], components });
+      }
+
+      // Book / Feedback: acknowledge (customizable)
+      if (action === 'book') {
+        return interaction.reply({
+          content: `🥿 Booking request for **${profileData.name || shortcut}** received! Staff will contact you shortly.`,
+          ephemeral: true
+        });
+      }
+      if (action === 'feedback') {
+        return interaction.reply({
+          content: `✉️ Thank you! Please type your feedback for **${profileData.name || shortcut}** here in the channel.`,
+          ephemeral: true
+        });
+      }
+
       return;
     }
   }
