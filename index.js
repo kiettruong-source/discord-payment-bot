@@ -314,6 +314,24 @@ client.on('interactionCreate', async (interaction) => {
 
 client.login(process.env.DISCORD_TOKEN);
 
+// Serve images from volume
+app.use('/image', (req, res) => {
+  const dataDir = fs.existsSync('/app/data') ? '/app/data' : __dirname;
+  const imagePath = path.join(dataDir, 'images', req.path.slice(1));
+  const normalizedPath = path.normalize(imagePath);
+
+  // Security: prevent directory traversal
+  if (!normalizedPath.startsWith(path.normalize(path.join(dataDir, 'images')))) {
+    return res.status(403).send('Forbidden');
+  }
+
+  if (!fs.existsSync(normalizedPath)) {
+    return res.status(404).send('Image not found');
+  }
+
+  res.sendFile(normalizedPath);
+});
+
 // Start Express Server for Webhooks
 app.use('/', createWebhookRouter(client));
 
