@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('disc
 const fs = require('fs');
 const path = require('path');
 const { buildProfileEmbed, buildProfileComponents, parseInterests } = require('../utils/profileCard');
+const { resolveImageUrl } = require('../utils/resolveImage');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -99,56 +100,52 @@ module.exports = {
     const book = interaction.options.getInteger('book');
     const feedback = interaction.options.getInteger('feedback');
 
-    const changed = [];
-
-    if (role !== null) { profile.role = role; changed.push('role'); }
-    if (name !== null) { profile.name = name; changed.push('name'); }
-
-    if (iconUrl !== null) {
-      if (!validateUrl(iconUrl)) {
-        return interaction.reply({ content: '❌ Avatar URL must start with http:// or https://', ephemeral: true });
-      }
-      profile.icon = iconUrl;
-      changed.push('avatar');
+    // --- Synchronous validation (before deferring) ---
+    if (iconUrl !== null && !validateUrl(iconUrl)) {
+      return interaction.reply({ content: '❌ Avatar URL must start with http:// or https://', ephemeral: true });
     }
-
+    let newImages = null;
     if (imagesStr !== null) {
-      const images = imagesStr.split(',').map(u => u.trim()).filter(Boolean);
-      for (const img of images) {
+      newImages = imagesStr.split(',').map(u => u.trim()).filter(Boolean);
+      for (const img of newImages) {
         if (!validateUrl(img)) {
           return interaction.reply({ content: `❌ Image URL invalid: ${img}`, ephemeral: true });
         }
       }
-      if (images.length === 0) {
+      if (newImages.length === 0) {
         return interaction.reply({ content: '❌ At least one image is required.', ephemeral: true });
       }
-      profile.images = images;
+    }
+    if (color !== null && !/^#?[0-9a-fA-F]{6}$/.test(color)) {
+      return interaction.reply({ content: '❌ Color must be a 6-digit hex like #f9a8d4', ephemeral: true });
+    }
+
+    const anyChange = [role, iconUrl, name, imagesStr, interestsStr, rating, color, likes, book, feedback]
+      .some(v => v !== null);
+    if (!anyChange) {
+      return interaction.reply({ content: 'ℹ️ Nothing to change — provide at least one field to update.', ephemeral: true });
+    }
+
+    // Resolving Tenor/Giphy page links needs network calls — defer first.
+    await interaction.deferReply();
+
+    const changed = [];
+    if (role !== null) { profile.role = role; changed.push('role'); }
+    if (name !== null) { profile.name = name; changed.push('name'); }
+    if (iconUrl !== null) { profile.icon = await resolveImageUrl(iconUrl); changed.push('avatar'); }
+    if (newImages !== null) {
+      const resolved = [];
+      for (const img of newImages) resolved.push(await resolveImageUrl(img));
+      profile.images = resolved;
       changed.push('images');
     }
-
-    if (interestsStr !== null) {
-      profile.interests = parseInterests(interestsStr);
-      changed.push('bio');
-    }
-
+    if (interestsStr !== null) { profile.interests = parseInterests(interestsStr); changed.push('bio'); }
     if (rating !== null) { profile.rating = rating || null; changed.push('rating'); }
-
-    if (color !== null) {
-      if (!/^#?[0-9a-fA-F]{6}$/.test(color)) {
-        return interaction.reply({ content: '❌ Color must be a 6-digit hex like #f9a8d4', ephemeral: true });
-      }
-      profile.color = color.startsWith('#') ? color : `#${color}`;
-      changed.push('color');
-    }
-
+    if (color !== null) { profile.color = color.startsWith('#') ? color : `#${color}`; changed.push('color'); }
     if (!profile.stats) profile.stats = { book: 0, feedback: 0, likes: 0 };
     if (likes !== null) { profile.stats.likes = likes; changed.push('likes'); }
     if (book !== null) { profile.stats.book = book; changed.push('book'); }
     if (feedback !== null) { profile.stats.feedback = feedback; changed.push('feedback'); }
-
-    if (changed.length === 0) {
-      return interaction.reply({ content: 'ℹ️ Nothing to change — provide at least one field to update.', ephemeral: true });
-    }
 
     fs.writeFileSync(galleryPath, JSON.stringify(gallery, null, 2), 'utf-8');
 
@@ -160,7 +157,7 @@ module.exports = {
       .setDescription(`Updated **${changed.join(', ')}** for \`${shortcut}\`.`)
       .setColor('#00ff00');
 
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [confirmEmbed, previewEmbed],
       components: previewComponents
     });

@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('disc
 const fs = require('fs');
 const path = require('path');
 const { buildProfileEmbed, buildProfileComponents, parseInterests } = require('../utils/profileCard');
+const { resolveImageUrl } = require('../utils/resolveImage');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -88,6 +89,14 @@ module.exports = {
 
     const interests = parseInterests(interestsStr);
 
+    // Resolving Tenor/Giphy page links needs network calls — defer first.
+    await interaction.deferReply();
+
+    // Resolve shareable page links (e.g. tenor.com/view/...) to direct media URLs
+    const resolvedIcon = await resolveImageUrl(iconUrl);
+    const resolvedImages = [];
+    for (const img of images) resolvedImages.push(await resolveImageUrl(img));
+
     const dataDir = fs.existsSync('/app/data') ? '/app/data' : path.join(__dirname, '..');
     const galleryPath = path.join(dataDir, 'gallery.json');
     let gallery = {};
@@ -100,9 +109,9 @@ module.exports = {
     }
 
     gallery[shortcut] = {
-      images,
+      images: resolvedImages,
       role,
-      icon: iconUrl,
+      icon: resolvedIcon,
       name,
       interests,
       rating: rating || null,
@@ -129,7 +138,7 @@ module.exports = {
       .setDescription(`Typing \`${shortcut}\` will now display this profile carousel (${images.length} images).`)
       .setColor('#00ff00');
 
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [confirmEmbed, previewEmbed],
       components: previewComponents
     });
