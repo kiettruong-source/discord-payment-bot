@@ -16,8 +16,8 @@ module.exports = {
         .setDescription('Role/title shown next to the icon (e.g. Ely 48)')
         .setRequired(true))
     .addStringOption(option =>
-      option.setName('icon_url')
-        .setDescription('Profile icon/avatar URL (animated GIF supported)')
+      option.setName('avatar_url')
+        .setDescription('Profile avatar URL (animated GIF supported)')
         .setRequired(true))
     .addStringOption(option =>
       option.setName('name')
@@ -28,8 +28,8 @@ module.exports = {
         .setDescription('Image URLs (comma-separated)')
         .setRequired(true))
     .addStringOption(option =>
-      option.setName('interests')
-        .setDescription('Interests separated by | or comma (e.g. "Gaming | Game: PUBG, LQ | Cam: Deal")')
+      option.setName('bio')
+        .setDescription('Bio lines separated by | or comma (e.g. "Gaming | Game: PUBG, LQ | Cam: Deal")')
         .setRequired(false))
     .addNumberOption(option =>
       option.setName('rating')
@@ -59,9 +59,9 @@ module.exports = {
 
     const shortcut = interaction.options.getString('shortcut').trim().toLowerCase();
     const role = interaction.options.getString('role');
-    const iconUrl = interaction.options.getString('icon_url');
+    const iconUrl = interaction.options.getString('avatar_url');
     const name = interaction.options.getString('name');
-    const interestsStr = interaction.options.getString('interests') || '';
+    const interestsStr = interaction.options.getString('bio') || '';
     const rating = interaction.options.getNumber('rating');
     const imagesStr = interaction.options.getString('images');
     const likes = interaction.options.getInteger('likes') || 0;

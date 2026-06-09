@@ -54,8 +54,8 @@ function buildProfileEmbed(profileRaw, currentImageIndex = 0) {
   }
   if (profileData.interests && profileData.interests.length > 0) {
     descLines.push(''); // spacer
-    // H3 renders ~20% larger than body text (Discord headers are bold)
-    profileData.interests.forEach(i => descLines.push(`### ✿ ${i}`));
+    // Normal (non-bold) body text, one bio line per row
+    profileData.interests.forEach(i => descLines.push(`✿ ${i}`));
   }
   if (profileData.custom_fields && profileData.custom_fields.length > 0) {
     profileData.custom_fields.forEach(f => descLines.push(`✿ ${f.name}: ${f.value}`));

@@ -16,8 +16,8 @@ module.exports = {
         .setDescription('New role/title shown next to the icon (e.g. Ely 48)')
         .setRequired(false))
     .addStringOption(option =>
-      option.setName('icon_url')
-        .setDescription('New icon/avatar URL (animated GIF supported)')
+      option.setName('avatar_url')
+        .setDescription('New avatar URL (animated GIF supported)')
         .setRequired(false))
     .addStringOption(option =>
       option.setName('name')
@@ -28,8 +28,8 @@ module.exports = {
         .setDescription('New image URLs (comma-separated) — replaces all images')
         .setRequired(false))
     .addStringOption(option =>
-      option.setName('interests')
-        .setDescription('New interests separated by | or comma — replaces all interests')
+      option.setName('bio')
+        .setDescription('New bio lines separated by | or comma — replaces all bio lines')
         .setRequired(false))
     .addNumberOption(option =>
       option.setName('rating')
@@ -89,10 +89,10 @@ module.exports = {
 
     // Read options (null when not provided)
     const role = interaction.options.getString('role');
-    const iconUrl = interaction.options.getString('icon_url');
+    const iconUrl = interaction.options.getString('avatar_url');
     const name = interaction.options.getString('name');
     const imagesStr = interaction.options.getString('images');
-    const interestsStr = interaction.options.getString('interests');
+    const interestsStr = interaction.options.getString('bio');
     const rating = interaction.options.getNumber('rating');
     const color = interaction.options.getString('color');
     const likes = interaction.options.getInteger('likes');
@@ -106,10 +106,10 @@ module.exports = {
 
     if (iconUrl !== null) {
       if (!validateUrl(iconUrl)) {
-        return interaction.reply({ content: '❌ Icon URL must start with http:// or https://', ephemeral: true });
+        return interaction.reply({ content: '❌ Avatar URL must start with http:// or https://', ephemeral: true });
       }
       profile.icon = iconUrl;
-      changed.push('icon');
+      changed.push('avatar');
     }
 
     if (imagesStr !== null) {
@@ -128,7 +128,7 @@ module.exports = {
 
     if (interestsStr !== null) {
       profile.interests = parseInterests(interestsStr);
-      changed.push('interests');
+      changed.push('bio');
     }
 
     if (rating !== null) { profile.rating = rating || null; changed.push('rating'); }
