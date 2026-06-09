@@ -39,26 +39,26 @@ function buildProfileEmbed(profileRaw, currentImageIndex = 0) {
   const embed = new EmbedBuilder()
     .setColor(profileData.color || DEFAULT_COLOR);
 
-  // Animated icon sits right next to the role at the top (author line).
-  // GIF icons animate ("blink blink") here.
-  if (profileData.role) {
-    const author = { name: `🌙 ${profileData.role}` };
-    if (profileData.icon) author.iconURL = squareIconUrl(profileData.icon);
-    embed.setAuthor(author);
+  // Avatar as a square in the top-right corner (animated GIFs keep moving).
+  if (profileData.icon) {
+    embed.setThumbnail(squareIconUrl(profileData.icon));
   }
 
-  // Name renders as a large markdown header below.
+  // Role (big) then name (smaller header) — no emoji decorations.
   const descLines = [];
+  if (profileData.role) {
+    descLines.push(`# ${profileData.role}`);
+  }
   if (profileData.name) {
-    descLines.push(`## ✨ ${profileData.name} ✨`);
+    descLines.push(`## ${profileData.name}`);
   }
   if (profileData.interests && profileData.interests.length > 0) {
     descLines.push(''); // spacer
-    // H3 makes interest lines a bit larger than normal body text
-    profileData.interests.forEach(i => descLines.push(`### ✿ ${i}`));
+    // Normal (non-bold) text, one interest per line
+    profileData.interests.forEach(i => descLines.push(`✿ ${i}`));
   }
   if (profileData.custom_fields && profileData.custom_fields.length > 0) {
-    profileData.custom_fields.forEach(f => descLines.push(`### ✿ ${f.name}: ${f.value}`));
+    profileData.custom_fields.forEach(f => descLines.push(`✿ ${f.name}: ${f.value}`));
   }
   // Divider between the text section and the image
   descLines.push('');
