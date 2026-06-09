@@ -37,7 +37,7 @@ for (const file of commandFiles) {
 }
 
 // Register slash commands on startup
-client.once('ready', async () => {
+client.once('clientReady', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
   // Initialize persistent data volume if it exists
