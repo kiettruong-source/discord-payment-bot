@@ -20,8 +20,8 @@ module.exports = {
         .setDescription('Link YouTube để cắt 30s / YouTube link to clip 30s from')
         .setRequired(false))
     .addIntegerOption((o) =>
-      o.setName('yt_start')
-        .setDescription('Giây bắt đầu cắt (mặc định 0) / Start second (default 0)')
+      o.setName('start')
+        .setDescription('Giây bắt đầu cắt 30s (cho file & YouTube, mặc định 0) / Start second for file & YouTube')
         .setRequired(false)
         .setMinValue(0))
     .addBooleanOption((o) =>
@@ -37,7 +37,7 @@ module.exports = {
     const shortcut = interaction.options.getString('shortcut').trim().toLowerCase();
     const file = interaction.options.getAttachment('file');
     const ytUrl = interaction.options.getString('yt_url');
-    const ytStart = interaction.options.getInteger('yt_start') || 0;
+    const start = interaction.options.getInteger('start') || 0;
     const remove = interaction.options.getBoolean('remove');
 
     const dataDir = fs.existsSync('/app/data') ? '/app/data' : path.join(__dirname, '..');
@@ -62,18 +62,19 @@ module.exports = {
       return interaction.reply({ embeds: [okEmbed(`Đã xóa âm thanh của \`${shortcut}\`. / Sound removed.`)] });
     }
 
-    // Upload
+    // Upload (download + ffmpeg trim — defer)
     if (file) {
+      await interaction.deferReply();
       try {
-        const sound = await saveUploadedSound(shortcut, file);
+        const sound = await saveUploadedSound(shortcut, file, start);
         profile.sound = sound;
         fs.writeFileSync(galleryPath, JSON.stringify(gallery, null, 2), 'utf-8');
-        return interaction.reply({ embeds: [okEmbed(`Đã thêm âm thanh (tải lên) cho \`${shortcut}\`. Thanh phát sẽ hiện dưới profile. / Sound added.`)] });
+        return interaction.editReply({ embeds: [okEmbed(`Đã thêm âm thanh (${CLIP_SECONDS}s từ giây ${start}) cho \`${shortcut}\`. Thanh phát sẽ hiện dưới profile. / Sound added (${CLIP_SECONDS}s from ${start}s).`)] });
       } catch (e) {
         const msg = e.message === 'NOT_AUDIO' ? '❌ File phải là âm thanh (mp3/ogg/wav/m4a). / File must be audio.'
           : e.message === 'TOO_BIG' ? '❌ File quá lớn (>8MB). / File too large (>8MB).'
-          : '❌ Không tải được file. / Could not save the file.';
-        return interaction.reply({ content: msg, ephemeral: true });
+          : '❌ Không xử lý được file. / Could not process the file.';
+        return interaction.editReply({ content: msg });
       }
     }
 
@@ -81,10 +82,10 @@ module.exports = {
     if (ytUrl) {
       await interaction.deferReply();
       try {
-        const sound = await fetchYouTubeClip(shortcut, ytUrl, ytStart);
+        const sound = await fetchYouTubeClip(shortcut, ytUrl, start);
         profile.sound = sound;
         fs.writeFileSync(galleryPath, JSON.stringify(gallery, null, 2), 'utf-8');
-        return interaction.editReply({ embeds: [okEmbed(`Đã cắt ${CLIP_SECONDS}s từ YouTube (bắt đầu ${ytStart}s) cho \`${shortcut}\`. / Clipped ${CLIP_SECONDS}s from YouTube.`)] });
+        return interaction.editReply({ embeds: [okEmbed(`Đã cắt ${CLIP_SECONDS}s từ YouTube (bắt đầu ${start}s) cho \`${shortcut}\`. / Clipped ${CLIP_SECONDS}s from YouTube.`)] });
       } catch (e) {
         const yt = /INVALID_URL/.test(e.message)
           ? '❌ Link YouTube không hợp lệ. / Invalid YouTube link.'
