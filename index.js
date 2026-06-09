@@ -55,11 +55,25 @@ client.once('clientReady', async () => {
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
   try {
     console.log('🔄 Registering slash commands...');
-    await rest.put(
-      Routes.applicationCommands(client.user.id),
-      { body: commands }
-    );
-    console.log('✅ Slash commands registered globally.');
+    const guilds = client.guilds.cache;
+    if (guilds.size > 0) {
+      // Clear global commands to avoid duplicates (global propagates slowly)
+      await rest.put(Routes.applicationCommands(client.user.id), { body: [] });
+      // Register per-guild for instant availability
+      for (const [guildId, guild] of guilds) {
+        await rest.put(
+          Routes.applicationGuildCommands(client.user.id, guildId),
+          { body: commands }
+        );
+        console.log(`✅ Slash commands registered for guild: ${guild.name} (${guildId})`);
+      }
+    } else {
+      await rest.put(
+        Routes.applicationCommands(client.user.id),
+        { body: commands }
+      );
+      console.log('✅ Slash commands registered globally (no guilds in cache).');
+    }
   } catch (err) {
     console.error('❌ Failed to register commands:', err);
   }
