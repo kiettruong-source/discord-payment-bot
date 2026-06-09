@@ -311,15 +311,16 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       // Book / Feedback: acknowledge (customizable)
+      const displayName = profileData.role || profileData.name || shortcut;
       if (action === 'book') {
         return interaction.reply({
-          content: `🥿 Booking request for **${profileData.name || shortcut}** received! Staff will contact you shortly.`,
+          content: `🥿 Booking request for **${displayName}** received! Staff will contact you shortly.`,
           ephemeral: true
         });
       }
       if (action === 'feedback') {
         return interaction.reply({
-          content: `✉️ Thank you! Please type your feedback for **${profileData.name || shortcut}** here in the channel.`,
+          content: `✉️ Thank you! Please type your feedback for **${displayName}** here in the channel.`,
           ephemeral: true
         });
       }

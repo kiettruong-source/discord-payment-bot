@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { buildProfileEmbed, buildProfileComponents } = require('../utils/profileCard');
+const { buildProfileEmbed, buildProfileComponents, parseInterests } = require('../utils/profileCard');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,16 +12,16 @@ module.exports = {
         .setDescription('The trigger word (e.g., e0)')
         .setRequired(true))
     .addStringOption(option =>
-      option.setName('name')
-        .setDescription('Profile name')
+      option.setName('role')
+        .setDescription('Role/title shown next to the icon (e.g. Ely 48)')
         .setRequired(true))
     .addStringOption(option =>
       option.setName('icon_url')
-        .setDescription('Profile icon/avatar URL')
+        .setDescription('Profile icon/avatar URL (animated GIF supported)')
         .setRequired(true))
     .addStringOption(option =>
-      option.setName('bio')
-        .setDescription('Bio/title text')
+      option.setName('name')
+        .setDescription('Name shown as the big header (e.g. Thổ Yeuu)')
         .setRequired(true))
     .addStringOption(option =>
       option.setName('images')
@@ -29,7 +29,7 @@ module.exports = {
         .setRequired(true))
     .addStringOption(option =>
       option.setName('interests')
-        .setDescription('Interests (comma-separated, e.g., "Gaming,Cooking,Music")')
+        .setDescription('Interests separated by | or comma (e.g. "Gaming | Game: PUBG, LQ | Cam: Deal")')
         .setRequired(false))
     .addNumberOption(option =>
       option.setName('rating')
@@ -58,9 +58,9 @@ module.exports = {
     }
 
     const shortcut = interaction.options.getString('shortcut').trim().toLowerCase();
-    const name = interaction.options.getString('name');
+    const role = interaction.options.getString('role');
     const iconUrl = interaction.options.getString('icon_url');
-    const bio = interaction.options.getString('bio');
+    const name = interaction.options.getString('name');
     const interestsStr = interaction.options.getString('interests') || '';
     const rating = interaction.options.getNumber('rating');
     const imagesStr = interaction.options.getString('images');
@@ -86,7 +86,7 @@ module.exports = {
       }
     }
 
-    const interests = interestsStr.split(',').map(i => i.trim()).filter(Boolean);
+    const interests = parseInterests(interestsStr);
 
     const dataDir = fs.existsSync('/app/data') ? '/app/data' : path.join(__dirname, '..');
     const galleryPath = path.join(dataDir, 'gallery.json');
@@ -101,9 +101,9 @@ module.exports = {
 
     gallery[shortcut] = {
       images,
-      name,
+      role,
       icon: iconUrl,
-      bio,
+      name,
       interests,
       rating: rating || null,
       color: color ? (color.startsWith('#') ? color : `#${color}`) : null,

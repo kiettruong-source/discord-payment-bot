@@ -15,30 +15,50 @@ function squareIconUrl(icon) {
   return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}&w=256&h=256&fit=cover&a=center${anim}`;
 }
 
-function buildProfileEmbed(profileData, currentImageIndex = 0) {
+// Parse an interests string into lines. Prefer newline or pipe `|` separators so
+// an interest can contain commas (e.g. "Game: PUBG, Liên Quân"); fall back to
+// comma-splitting when neither is present.
+function parseInterests(str) {
+  if (!str) return [];
+  const parts = /[\n|]/.test(str) ? str.split(/[\n|]/) : str.split(',');
+  return parts.map(s => s.trim()).filter(Boolean);
+}
+
+// Schema: { role: <icon-line identity>, name: <big header> }.
+// Migrate the old schema ({ name: identity, bio: header }) on read so existing
+// profiles keep rendering correctly.
+function normalizeProfile(p) {
+  if (p && p.bio !== undefined && p.role === undefined) {
+    return { ...p, role: p.name, name: p.bio };
+  }
+  return p;
+}
+
+function buildProfileEmbed(profileRaw, currentImageIndex = 0) {
+  const profileData = normalizeProfile(profileRaw);
   const embed = new EmbedBuilder()
     .setColor(profileData.color || DEFAULT_COLOR);
 
-  // Avatar shows as a square in the top-right corner (center-cropped to square)
-  if (profileData.icon) {
-    embed.setThumbnail(squareIconUrl(profileData.icon));
+  // Animated icon sits right next to the role at the top (author line).
+  // GIF icons animate ("blink blink") here.
+  if (profileData.role) {
+    const author = { name: `🌙 ${profileData.role}` };
+    if (profileData.icon) author.iconURL = squareIconUrl(profileData.icon);
+    embed.setAuthor(author);
   }
 
-  // Use markdown headers so the name/bio render LARGE (like the target card).
-  // # = H1 (biggest), ## = H2 (big). Everything lives in the description.
+  // Name renders as a large markdown header below.
   const descLines = [];
   if (profileData.name) {
-    descLines.push(`# 🌙 ${profileData.name}`);
-  }
-  if (profileData.bio) {
-    descLines.push(`## ✨ ${profileData.bio} ✨`);
+    descLines.push(`## ✨ ${profileData.name} ✨`);
   }
   if (profileData.interests && profileData.interests.length > 0) {
     descLines.push(''); // spacer
-    profileData.interests.forEach(i => descLines.push(`✿  ${i}`));
+    // H3 makes interest lines a bit larger than normal body text
+    profileData.interests.forEach(i => descLines.push(`### ✿ ${i}`));
   }
   if (profileData.custom_fields && profileData.custom_fields.length > 0) {
-    profileData.custom_fields.forEach(f => descLines.push(`✿  **${f.name}:** ${f.value}`));
+    profileData.custom_fields.forEach(f => descLines.push(`### ✿ ${f.name}: ${f.value}`));
   }
   // Divider between the text section and the image
   descLines.push('');
@@ -119,5 +139,7 @@ function buildProfileComponents(shortcutName, profileData, currentPage = 0) {
 
 module.exports = {
   buildProfileEmbed,
-  buildProfileComponents
+  buildProfileComponents,
+  normalizeProfile,
+  parseInterests
 };

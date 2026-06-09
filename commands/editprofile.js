@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { buildProfileEmbed, buildProfileComponents } = require('../utils/profileCard');
+const { buildProfileEmbed, buildProfileComponents, parseInterests } = require('../utils/profileCard');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,16 +12,16 @@ module.exports = {
         .setDescription('The profile trigger word to edit (e.g. e0)')
         .setRequired(true))
     .addStringOption(option =>
-      option.setName('name')
-        .setDescription('New profile name')
+      option.setName('role')
+        .setDescription('New role/title shown next to the icon (e.g. Ely 48)')
         .setRequired(false))
     .addStringOption(option =>
       option.setName('icon_url')
         .setDescription('New icon/avatar URL (animated GIF supported)')
         .setRequired(false))
     .addStringOption(option =>
-      option.setName('bio')
-        .setDescription('New bio/title text')
+      option.setName('name')
+        .setDescription('New name shown as the big header (e.g. Thổ Yeuu)')
         .setRequired(false))
     .addStringOption(option =>
       option.setName('images')
@@ -29,7 +29,7 @@ module.exports = {
         .setRequired(false))
     .addStringOption(option =>
       option.setName('interests')
-        .setDescription('New interests (comma-separated) — replaces all interests')
+        .setDescription('New interests separated by | or comma — replaces all interests')
         .setRequired(false))
     .addNumberOption(option =>
       option.setName('rating')
@@ -78,12 +78,19 @@ module.exports = {
       });
     }
 
+    // Migrate old schema (name=role, bio=name) in place so edits use new fields
+    if (profile.bio !== undefined && profile.role === undefined) {
+      profile.role = profile.name;
+      profile.name = profile.bio;
+      delete profile.bio;
+    }
+
     const validateUrl = (url) => url.startsWith('http://') || url.startsWith('https://');
 
     // Read options (null when not provided)
-    const name = interaction.options.getString('name');
+    const role = interaction.options.getString('role');
     const iconUrl = interaction.options.getString('icon_url');
-    const bio = interaction.options.getString('bio');
+    const name = interaction.options.getString('name');
     const imagesStr = interaction.options.getString('images');
     const interestsStr = interaction.options.getString('interests');
     const rating = interaction.options.getNumber('rating');
@@ -94,8 +101,8 @@ module.exports = {
 
     const changed = [];
 
+    if (role !== null) { profile.role = role; changed.push('role'); }
     if (name !== null) { profile.name = name; changed.push('name'); }
-    if (bio !== null) { profile.bio = bio; changed.push('bio'); }
 
     if (iconUrl !== null) {
       if (!validateUrl(iconUrl)) {
@@ -120,7 +127,7 @@ module.exports = {
     }
 
     if (interestsStr !== null) {
-      profile.interests = interestsStr.split(',').map(i => i.trim()).filter(Boolean);
+      profile.interests = parseInterests(interestsStr);
       changed.push('interests');
     }
 

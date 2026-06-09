@@ -43,7 +43,7 @@ module.exports = {
       });
     }
 
-    const profileName = entry.name || shortcut;
+    const profileName = entry.role || entry.name || shortcut;
     const imageCount = entry.images.length;
 
     delete gallery[shortcut];
