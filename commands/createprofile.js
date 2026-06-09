@@ -2,7 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('disc
 const fs = require('fs');
 const path = require('path');
 const { buildProfileEmbed, buildProfileComponents, parseInterests } = require('../utils/profileCard');
-const { resolveImageUrl } = require('../utils/resolveImage');
+const { resolveImageUrl, resolveImageDetailed } = require('../utils/resolveImage');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -93,7 +93,13 @@ module.exports = {
     await interaction.deferReply();
 
     // Resolve shareable page links (e.g. tenor.com/view/...) to direct media URLs
-    const resolvedIcon = await resolveImageUrl(iconUrl);
+    const iconResolved = await resolveImageDetailed(iconUrl);
+    if (!iconResolved.isImage) {
+      return interaction.editReply({
+        content: '❌ That avatar is a video (.mp4), not an image — Discord can only show GIF/PNG/JPG avatars. Use the Tenor **page** link (tenor.com/view/...) or a direct .gif/.png/.jpg URL.'
+      });
+    }
+    const resolvedIcon = iconResolved.url;
     const resolvedImages = [];
     for (const img of images) resolvedImages.push(await resolveImageUrl(img));
 

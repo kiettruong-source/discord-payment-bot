@@ -2,7 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('disc
 const fs = require('fs');
 const path = require('path');
 const { buildProfileEmbed, buildProfileComponents, parseInterests } = require('../utils/profileCard');
-const { resolveImageUrl } = require('../utils/resolveImage');
+const { resolveImageUrl, resolveImageDetailed } = require('../utils/resolveImage');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -132,7 +132,16 @@ module.exports = {
     const changed = [];
     if (role !== null) { profile.role = role; changed.push('role'); }
     if (name !== null) { profile.name = name; changed.push('name'); }
-    if (iconUrl !== null) { profile.icon = await resolveImageUrl(iconUrl); changed.push('avatar'); }
+    if (iconUrl !== null) {
+      const iconResolved = await resolveImageDetailed(iconUrl);
+      if (!iconResolved.isImage) {
+        return interaction.editReply({
+          content: '❌ That avatar is a video (.mp4), not an image — Discord can only show GIF/PNG/JPG avatars. Use the Tenor **page** link (tenor.com/view/...) or a direct .gif/.png/.jpg URL.'
+        });
+      }
+      profile.icon = iconResolved.url;
+      changed.push('avatar');
+    }
     if (newImages !== null) {
       const resolved = [];
       for (const img of newImages) resolved.push(await resolveImageUrl(img));
