@@ -278,7 +278,7 @@ ${chatHistoryText}
       if (soundAttachment) {
         const who = itemData.role || itemData.name || userWord;
         await message.channel.send({
-          content: `୨୧ ⋆｡˚ 🎧 **${who}** ˚｡⋆ ୨୧\n-# ▶ bấm để nghe / tap to play`,
+          content: `୨୧ ⋆｡˚ 🎧 **${who}** ˚｡⋆ ୨୧`,
           files: [soundAttachment],
         });
       }
