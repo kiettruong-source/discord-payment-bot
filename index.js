@@ -8,6 +8,7 @@ const axios = require('axios');
 const express = require('express');
 const { createWebhookRouter } = require('./utils/webhook');
 const { buildProfileEmbed, buildProfileComponents } = require('./utils/profileCard');
+const { claimDaily } = require('./utils/economy');
 const { GoogleGenAI } = require('@google/genai');
 
 // Download an animated GIF avatar so it can be attached to the message — Discord
@@ -45,7 +46,7 @@ const profileState = {};
 
 // Commands open to everyone (bypass the Support-role gate). addmoney self-guards
 // (admin/owner check inside its execute).
-const PUBLIC_COMMANDS = new Set(['taixiu', 'balance', 'daily', 'addmoney']);
+const PUBLIC_COMMANDS = new Set(['taixiu', 'balance', 'addmoney']);
 
 // Load commands
 const commandsPath = path.join(__dirname, 'commands');
@@ -210,6 +211,21 @@ ${chatHistoryText}
   }
 
   const userWord = message.content.trim().toLowerCase();
+
+  // Text trigger to claim daily coins (typed as "vdaily")
+  if (userWord === 'vdaily') {
+    const res = claimDaily(message.author.id, Date.now());
+    if (res.ok) {
+      await message.reply(`✅ ${message.author}, bạn nhận **${res.amount}** coin! Số dư: **${res.newBalance}**. / Claimed ${res.amount} coins!`);
+    } else {
+      const totalMin = Math.ceil(res.remainingMs / 60000);
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      await message.reply(`⏳ Bạn đã nhận rồi. Quay lại sau **${h}h ${m}m**. / Already claimed — come back in ${h}h ${m}m.`);
+    }
+    return;
+  }
+
   const dataDir = fs.existsSync('/app/data') ? '/app/data' : __dirname;
   const galleryPath = path.join(dataDir, 'gallery.json');
   let gallery = {};
