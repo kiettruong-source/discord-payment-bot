@@ -113,27 +113,15 @@ function buildProfileComponents(shortcutName, profileData, currentPage = 0) {
     navRow.addComponents(ratingBtn);
   }
 
-  // Row 2: Book | Feedback | Like
+  // Row 2: Like only
   const likes = (profileData.stats && profileData.stats.likes) || 0;
-  const bookBtn = new ButtonBuilder()
-    .setCustomId(`profile_book_${currentPage}_${shortcutName}`)
-    .setLabel('Book')
-    .setEmoji('🥿')
-    .setStyle(ButtonStyle.Primary);
-
-  const feedbackBtn = new ButtonBuilder()
-    .setCustomId(`profile_feedback_${currentPage}_${shortcutName}`)
-    .setLabel('Feedback')
-    .setEmoji('✉️')
-    .setStyle(ButtonStyle.Secondary);
-
   const likeBtn = new ButtonBuilder()
     .setCustomId(`profile_like_${currentPage}_${shortcutName}`)
     .setLabel(`${likes}`)
     .setEmoji('💗')
     .setStyle(ButtonStyle.Secondary);
 
-  const actionRow = new ActionRowBuilder().addComponents(bookBtn, feedbackBtn, likeBtn);
+  const actionRow = new ActionRowBuilder().addComponents(likeBtn);
 
   return [navRow, actionRow];
 }
