@@ -43,6 +43,10 @@ client.commands = new Collection();
 // Profile carousel state (stores current page per message)
 const profileState = {};
 
+// Commands open to everyone (bypass the Support-role gate). addmoney self-guards
+// (admin/owner check inside its execute).
+const PUBLIC_COMMANDS = new Set(['taixiu', 'balance', 'daily', 'addmoney']);
+
 // Load commands
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'));
@@ -363,17 +367,20 @@ client.on('interactionCreate', async (interaction) => {
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
 
-  // Role check: user must have "support" role
-  const member = interaction.member;
-  const hasRole = member.roles.cache.some(
-    r => r.name.toLowerCase() === (process.env.SUPPORT_ROLE_NAME || 'support').toLowerCase()
-  );
+  // Public game/economy commands are open to everyone (they self-guard where
+  // needed, e.g. addmoney checks admin/owner). All other commands need Support.
+  if (!PUBLIC_COMMANDS.has(interaction.commandName)) {
+    const member = interaction.member;
+    const hasRole = member.roles.cache.some(
+      r => r.name.toLowerCase() === (process.env.SUPPORT_ROLE_NAME || 'support').toLowerCase()
+    );
 
-  if (!hasRole) {
-    return interaction.reply({
-      content: '❌ You need the **Support** role to use this command.',
-      ephemeral: true,
-    });
+    if (!hasRole) {
+      return interaction.reply({
+        content: '❌ You need the **Support** role to use this command.',
+        ephemeral: true,
+      });
+    }
   }
 
   try {
