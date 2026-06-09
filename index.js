@@ -8,7 +8,8 @@ const axios = require('axios');
 const express = require('express');
 const { createWebhookRouter } = require('./utils/webhook');
 const { buildProfileEmbed, buildProfileComponents } = require('./utils/profileCard');
-const { claimDaily } = require('./utils/economy');
+const { claimDaily, getBalance } = require('./utils/economy');
+const { playTaixiuText } = require('./utils/taixiuGame');
 const { GoogleGenAI } = require('@google/genai');
 
 // Download an animated GIF avatar so it can be attached to the message — Discord
@@ -44,9 +45,10 @@ client.commands = new Collection();
 // Profile carousel state (stores current page per message)
 const profileState = {};
 
-// Commands open to everyone (bypass the Support-role gate). addmoney self-guards
-// (admin/owner check inside its execute).
-const PUBLIC_COMMANDS = new Set(['taixiu', 'balance', 'addmoney']);
+// Slash commands that bypass the Support-role gate. addmoney self-guards
+// (admin/owner check inside its execute). The play commands are text triggers
+// (vtaixiu/vbalance/vdaily) handled in messageCreate, not slash commands.
+const PUBLIC_COMMANDS = new Set(['addmoney']);
 
 // Load commands
 const commandsPath = path.join(__dirname, 'commands');
@@ -212,8 +214,19 @@ ${chatHistoryText}
 
   const userWord = message.content.trim().toLowerCase();
 
-  // Text trigger to claim daily coins (typed as "vdaily")
-  if (userWord === 'vdaily') {
+  // Text game commands (v-prefix): vtaixiu, vbalance, vdaily
+  const tokens = userWord.split(/\s+/);
+  const vcmd = tokens[0];
+  if (vcmd === 'vtaixiu') {
+    await playTaixiuText(message, tokens.slice(1));
+    return;
+  }
+  if (vcmd === 'vbalance') {
+    const coins = getBalance(message.author.id);
+    await message.reply(`💰 ${message.author}, số dư của bạn: **${coins}** coin / Your balance: **${coins}** coin`);
+    return;
+  }
+  if (vcmd === 'vdaily') {
     const res = claimDaily(message.author.id, Date.now());
     if (res.ok) {
       await message.reply(`✅ ${message.author}, bạn nhận **${res.amount}** coin! Số dư: **${res.newBalance}**. / Claimed ${res.amount} coins!`);
