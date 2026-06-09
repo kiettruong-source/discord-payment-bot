@@ -1,13 +1,31 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
 const express = require('express');
 const { createWebhookRouter } = require('./utils/webhook');
 const { buildProfileEmbed, buildProfileComponents } = require('./utils/profileCard');
 const { GoogleGenAI } = require('@google/genai');
+
+// Download an animated GIF avatar so it can be attached to the message — Discord
+// animates GIFs served from its own CDN (attachment), unlike proxied thumbnails.
+async function fetchAvatarAttachment(icon) {
+  if (!icon || !/\.gif(\?|$)/i.test(icon)) return null;
+  try {
+    const resp = await axios.get(icon, {
+      responseType: 'arraybuffer',
+      timeout: 8000,
+      maxContentLength: 8 * 1024 * 1024,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiscordBot/1.0)' },
+    });
+    return new AttachmentBuilder(Buffer.from(resp.data), { name: 'avatar.gif' });
+  } catch (e) {
+    return null;
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -204,17 +222,22 @@ ${chatHistoryText}
 
     // Check if this is a carousel (has images array) or single image (has url string)
     if (typeof itemData === 'object' && itemData.images && Array.isArray(itemData.images)) {
-      // Profile carousel
-      const embed = buildProfileEmbed(itemData, 0);
+      // Profile carousel — attach animated GIF avatars so they actually move
+      const attachment = await fetchAvatarAttachment(itemData.icon);
+      const embed = buildProfileEmbed(itemData, 0, attachment ? { thumbnailOverride: 'attachment://avatar.gif' } : {});
       const components = buildProfileComponents(userWord, itemData, 0);
 
       const sentMessage = await message.channel.send({
         embeds: [embed],
-        components
+        components,
+        files: attachment ? [attachment] : []
       });
 
+      // Reuse the uploaded CDN URL (ends in .gif, Discord-hosted) on navigation
+      const avatarCdnUrl = attachment ? (sentMessage.attachments.first()?.url || null) : null;
+
       // Store state for button interactions
-      profileState[sentMessage.id] = { shortcut: userWord, page: 0 };
+      profileState[sentMessage.id] = { shortcut: userWord, page: 0, avatarCdnUrl };
 
       // Auto-clean state after 10 minutes
       setTimeout(() => {
@@ -283,13 +306,19 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: '❌ Profile not found or invalid.', ephemeral: true });
       }
 
+      // Preserve the avatar across updates: reuse the attached GIF's CDN URL (kept
+      // in state) or whatever thumbnail the message already shows.
+      const state = profileState[interaction.message.id] || {};
+      const keepThumb = state.avatarCdnUrl || interaction.message.embeds[0]?.thumbnail?.url || null;
+      const embedOpts = keepThumb ? { thumbnailOverride: keepThumb } : {};
+
       // Navigation: flip between images
       if (action === 'prev' || action === 'next') {
         const newPage = action === 'next' ? currentPage + 1 : currentPage - 1;
         if (newPage < 0 || newPage >= profileData.images.length) {
           return interaction.reply({ content: '❌ Already at the end!', ephemeral: true });
         }
-        const embed = buildProfileEmbed(profileData, newPage);
+        const embed = buildProfileEmbed(profileData, newPage, embedOpts);
         const components = buildProfileComponents(shortcut, profileData, newPage);
         return interaction.update({ embeds: [embed], components });
       }
@@ -305,7 +334,7 @@ client.on('interactionCreate', async (interaction) => {
         profileData.stats.likes = (profileData.stats.likes || 0) + 1;
         fs.writeFileSync(galleryPath, JSON.stringify(gallery, null, 2), 'utf-8');
 
-        const embed = buildProfileEmbed(profileData, currentPage);
+        const embed = buildProfileEmbed(profileData, currentPage, embedOpts);
         const components = buildProfileComponents(shortcut, profileData, currentPage);
         return interaction.update({ embeds: [embed], components });
       }

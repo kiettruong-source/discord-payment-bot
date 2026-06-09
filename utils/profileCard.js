@@ -2,18 +2,17 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 
 const DEFAULT_COLOR = '#f9a8d4'; // soft pink to match the booking card style
 
-// Discord only animates a thumbnail when the URL is a direct .gif. Routing an
-// animated GIF through the weserv proxy (URL ends in query params, not ".gif")
-// makes Discord render a static first frame. So:
-//   - animated GIFs  → use the direct URL unchanged (keeps it moving)
-//   - static images  → weserv center-crop to a square
-// Most avatar GIFs (e.g. Tenor) are already square, so skipping the crop is fine.
+// Route the icon through the weserv proxy for a square center-crop. Discord's
+// embed proxy reliably fetches weserv URLs (it does NOT reliably fetch direct
+// media.tenor.com URLs). Animated GIFs keep all frames here, but Discord renders
+// a *thumbnail* statically — for live animation the carousel attaches the GIF as
+// a file instead (see index.js). This URL is used for previews and as a fallback.
 function squareIconUrl(icon) {
   if (!icon || !/^https?:\/\//.test(icon)) return icon;
-  const isAnimated = /\.gif(\?|$)/i.test(icon) || /\/a_[0-9a-f]+/i.test(icon);
-  if (isAnimated) return icon;
   const stripped = icon.replace(/^https?:\/\//, '');
-  return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}&w=256&h=256&fit=cover&a=center`;
+  const isAnimated = /\.gif(\?|$)/i.test(icon) || /\/a_[0-9a-f]+/i.test(icon);
+  const anim = isAnimated ? '&output=gif&n=-1' : '';
+  return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}&w=256&h=256&fit=cover&a=center${anim}`;
 }
 
 // Parse a bio string into lines, split on period `.`, pipe `|`, or newline.
@@ -33,13 +32,16 @@ function normalizeProfile(p) {
   return p;
 }
 
-function buildProfileEmbed(profileRaw, currentImageIndex = 0) {
+function buildProfileEmbed(profileRaw, currentImageIndex = 0, opts = {}) {
   const profileData = normalizeProfile(profileRaw);
   const embed = new EmbedBuilder()
     .setColor(profileData.color || DEFAULT_COLOR);
 
-  // Avatar as a square in the top-right corner (animated GIFs keep moving).
-  if (profileData.icon) {
+  // Avatar in the top-right corner. thumbnailOverride lets the caller pass an
+  // attachment:// reference (for live animated GIFs) instead of the proxy URL.
+  if (opts.thumbnailOverride) {
+    embed.setThumbnail(opts.thumbnailOverride);
+  } else if (profileData.icon) {
     embed.setThumbnail(squareIconUrl(profileData.icon));
   }
 
