@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const { createWebhookRouter } = require('./utils/webhook');
+const { buildProfileEmbed, buildNavigationButtons } = require('./utils/profileCard');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
@@ -20,6 +21,9 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+
+// Profile carousel state (stores current page per message)
+const profileState = {};
 
 // Load commands
 const commandsPath = path.join(__dirname, 'commands');
@@ -183,43 +187,100 @@ ${chatHistoryText}
 
   if (gallery[userWord]) {
     const itemData = gallery[userWord];
-    let imageUrl = '';
-    let targetUserId = null;
-    let customText = null;
 
-    if (typeof itemData === 'object' && itemData !== null) {
-      imageUrl = itemData.url;
-      customText = itemData.custom_text || null;
-      // Handle new target_user_id and fallback to old should_ping
-      if (itemData.target_user_id) {
-        targetUserId = itemData.target_user_id;
-      } else if (itemData.should_ping) {
-        targetUserId = message.author.id;
-      }
+    // Check if this is a carousel (has images array) or single image (has url string)
+    if (typeof itemData === 'object' && itemData.images && Array.isArray(itemData.images)) {
+      // Profile carousel
+      const embed = buildProfileEmbed(itemData, 0);
+      const components = itemData.images.length > 1 ? [buildNavigationButtons(userWord, itemData.images.length, 0)] : [];
+
+      const sentMessage = await message.channel.send({
+        embeds: [embed],
+        components
+      });
+
+      // Store state for button interactions
+      profileState[sentMessage.id] = { shortcut: userWord, page: 0 };
+
+      // Auto-clean state after 10 minutes
+      setTimeout(() => {
+        delete profileState[sentMessage.id];
+      }, 10 * 60 * 1000);
     } else {
-      imageUrl = itemData;
-    }
+      // Single image (backward compatibility)
+      let imageUrl = '';
+      let targetUserId = null;
+      let customText = null;
 
-    let contentText = null;
-    if (customText) {
-      contentText = targetUserId ? `<@${targetUserId}> ${customText}` : customText;
-    } else if (targetUserId) {
-      contentText = `Hey <@${targetUserId}>, here you go!`;
-    }
+      if (typeof itemData === 'object' && itemData !== null) {
+        imageUrl = itemData.url;
+        customText = itemData.custom_text || null;
+        if (itemData.target_user_id) {
+          targetUserId = itemData.target_user_id;
+        } else if (itemData.should_ping) {
+          targetUserId = message.author.id;
+        }
+      } else {
+        imageUrl = itemData;
+      }
 
-    const messageOptions = {};
-    if (contentText) messageOptions.content = contentText;
-    if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
-      const embed = new EmbedBuilder().setImage(imageUrl);
-      messageOptions.embeds = [embed];
-    }
+      let contentText = null;
+      if (customText) {
+        contentText = targetUserId ? `<@${targetUserId}> ${customText}` : customText;
+      } else if (targetUserId) {
+        contentText = `Hey <@${targetUserId}>, here you go!`;
+      }
 
-    await message.channel.send(messageOptions);
+      const messageOptions = {};
+      if (contentText) messageOptions.content = contentText;
+      if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+        const embed = new EmbedBuilder().setImage(imageUrl);
+        messageOptions.embeds = [embed];
+      }
+
+      await message.channel.send(messageOptions);
+    }
   }
 });
 
 // Handle interactions
 client.on('interactionCreate', async (interaction) => {
+  // Handle profile carousel button navigation
+  if (interaction.isButton()) {
+    const customId = interaction.customId;
+    if (customId.startsWith('profile_')) {
+      const parts = customId.split('_');
+      const action = parts[1]; // 'prev' or 'next'
+      const shortcut = parts[2];
+      const currentPage = parseInt(parts[3]);
+
+      const dataDir = fs.existsSync('/app/data') ? '/app/data' : __dirname;
+      const galleryPath = path.join(dataDir, 'gallery.json');
+      let gallery = {};
+      try {
+        gallery = JSON.parse(fs.readFileSync(galleryPath, 'utf-8'));
+      } catch (e) {
+        return interaction.reply({ content: '❌ Failed to load gallery.', ephemeral: true });
+      }
+
+      const profileData = gallery[shortcut];
+      if (!profileData || !profileData.images || !Array.isArray(profileData.images)) {
+        return interaction.reply({ content: '❌ Profile not found or invalid.', ephemeral: true });
+      }
+
+      const newPage = action === 'next' ? currentPage + 1 : currentPage - 1;
+      if (newPage < 0 || newPage >= profileData.images.length) {
+        return interaction.reply({ content: '❌ Already at the end!', ephemeral: true });
+      }
+
+      const embed = buildProfileEmbed(profileData, newPage);
+      const buttons = buildNavigationButtons(shortcut, profileData.images.length, newPage);
+
+      await interaction.update({ embeds: [embed], components: [buttons] });
+      return;
+    }
+  }
+
   if (!interaction.isChatInputCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
@@ -252,6 +313,24 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
+// Serve images from volume
+app.use('/image', (req, res) => {
+  const dataDir = fs.existsSync('/app/data') ? '/app/data' : __dirname;
+  const imagePath = path.join(dataDir, 'images', req.path.slice(1));
+  const normalizedPath = path.normalize(imagePath);
+
+  // Security: prevent directory traversal
+  if (!normalizedPath.startsWith(path.normalize(path.join(dataDir, 'images')))) {
+    return res.status(403).send('Forbidden');
+  }
+
+  if (!fs.existsSync(normalizedPath)) {
+    return res.status(404).send('Image not found');
+  }
+
+  res.sendFile(normalizedPath);
+});
 
 // Start Express Server for Webhooks
 app.use('/', createWebhookRouter(client));
