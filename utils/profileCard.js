@@ -5,10 +5,14 @@ const DEFAULT_COLOR = '#f9a8d4'; // soft pink to match the booking card style
 // Discord thumbnails keep the source aspect ratio, so a rectangular icon shows
 // as a rectangle. Route it through the weserv image proxy with a center-crop to
 // force a square (cover) display regardless of the original dimensions.
+// Animated GIFs are preserved (all frames) so the icon keeps moving.
 function squareIconUrl(icon) {
   if (!icon || !/^https?:\/\//.test(icon)) return icon;
   const stripped = icon.replace(/^https?:\/\//, '');
-  return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}&w=256&h=256&fit=cover&a=center`;
+  // Detect animated sources: .gif URLs or Discord animated avatars (a_ prefix)
+  const isAnimated = /\.gif(\?|$)/i.test(icon) || /\/a_[0-9a-f]+/i.test(icon);
+  const anim = isAnimated ? '&output=gif&n=-1' : '';
+  return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}&w=256&h=256&fit=cover&a=center${anim}`;
 }
 
 function buildProfileEmbed(profileData, currentImageIndex = 0) {
