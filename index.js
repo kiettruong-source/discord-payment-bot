@@ -261,16 +261,10 @@ ${chatHistoryText}
       const embed = buildProfileEmbed(itemData, 0, attachment ? { thumbnailOverride: 'attachment://avatar.gif' } : {});
       const components = buildProfileComponents(userWord, itemData, 0);
 
-      // Optional sound bar: attach the profile's stored audio (if any) below the card
-      const soundAttachment = getSoundAttachment(itemData);
-      const files = [];
-      if (attachment) files.push(attachment);
-      if (soundAttachment) files.push(soundAttachment);
-
       const sentMessage = await message.channel.send({
         embeds: [embed],
         components,
-        files
+        files: attachment ? [attachment] : []
       });
 
       // Reuse the uploaded CDN URL (ends in .gif, Discord-hosted) on navigation
@@ -278,6 +272,16 @@ ${chatHistoryText}
 
       // Store state for button interactions
       profileState[sentMessage.id] = { shortcut: userWord, page: 0, avatarCdnUrl };
+
+      // Optional sound bar — sent as a styled separate message right below the card
+      const soundAttachment = getSoundAttachment(itemData);
+      if (soundAttachment) {
+        const who = itemData.role || itemData.name || userWord;
+        await message.channel.send({
+          content: `୨୧ ⋆｡˚ 🎧 **${who}** ˚｡⋆ ୨୧\n-# ▶ bấm để nghe / tap to play`,
+          files: [soundAttachment],
+        });
+      }
 
       // Auto-clean state after 10 minutes
       setTimeout(() => {
